@@ -1,0 +1,32 @@
+function [N]=determine_direction_of_emission(X,Y,Z,precision,H)
+D=1;Rphi=rand;
+Rtheta=rand;
+phi=2*pi*Rphi;
+theta=asin(sqrt(Rtheta));
+if (abs((Z+H)<precision))
+    nx=0;
+    ny=0;
+    nz=1;
+else
+    nx=0;
+    ny=0;
+    nz=-1;
+end
+if (nx<1)
+    a=sqrt((ny*ny)+(nz*nz));
+    t1x=0;
+    t1y=nz/a;
+    t1z=-ny/a;
+elseif (abs(nx-1)<precision)
+    a=sqrt((nx*nx)+(nz*nz));
+    t1x=-nz/a;
+    t1y=0;
+    t1z=nx/a;
+end
+t2x=(ny*t1z)-(nz*t1y);
+t2y=-((nx*t1z)-(nz*t1x));
+t2z=(nx*t1y)-(ny*t1x);
+l=(nx*cos(theta))+(t1x*sin(theta)*cos(phi))+(t2x*sin(theta)*sin(phi));
+m=(ny*cos(theta))+(t1y*sin(theta)*cos(phi))+(t2y*sin(theta)*sin(phi));
+n=(nz*cos(theta))+(t1z*sin(theta)*cos(phi))+(t2z*sin(theta)*sin(phi));
+N=[l m n];
