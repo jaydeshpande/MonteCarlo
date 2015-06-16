@@ -1,0 +1,152 @@
+clear all; close all; clc;
+L=1; %Length along x direction
+H=0.05; %Distance between top and bottom planes
+B=44; %Width of the plate % 11 corresponds to 0.05 absorption 44, 110 @ 0.1 thickness
+h=1; % Surface heat transfer coefficient at the waveguide and air interface
+t=2;% time stepping for the finite difference code
+nBP=[0 0 1]; % Normal to the bottom plate (direction vector) indicating -Z direction
+nTP=[0 0 -1]; % Normal to the top plate (direction vector) indicicating +Z direction 
+eps1=0.5; % Emissivity of the 1st body (bottom plane) 
+rho2=1; % Reflectivity of the 2nd body (Top plane bottom side) 
+precision=0.001; % Precision to test the accuracy (Mostly not used, useful in the debugging mode)  
+hits=zeros(); % matrix to record the absorption points 
+firsthits=zeros(); % matrix to record the first hits (hits on the top plne on the top side, packets which are absorbed direction before undergoing any reflection or emission)
+wallhits=zeros(); % end wall hits (direct transported radiation to the side walls in this case, the receivers)
+bottomhits=zeros(); % energy bundles tracked on the bttom surface of the waveguide. these will count towardss the conduction heat transfer
+sidehits=zeros(); % side wall hits are the nergy bundles escaping from the side walls, these are assumed to abosorbed. The energy abosrbed will count towards the conduction heat transfer.
+g=1; % counter for direction abosrption
+bg=1; % counter for bottom absorbed rays count
+sg=1; % counter for direct transmitted rays count 
+incident=zeros(); % count for storing location of the incident rays to test if the random numbers generated are truly random or not
+v=1;
+xmin=-L; % bounds of the waveguide
+xmax=L;
+ymin=-B;
+ymax=B;
+nrays=100000; % number of rays to be traced
+nref=1.5; % refractive index of the waveguide material
+escape_cone_angle=asin(1/nref);
+for i=1:1:nrays %number of rays
+    x=rand;
+    y=rand;
+    X=xmin+(x*(xmax-xmin));
+    Y=ymin+(y*(ymax-ymin));
+    Z=H;
+    incident(v,1)=X;
+    incident(v,2)=Y;
+    incident(v,3)=Z;
+    v=v+1;
+    N=determine_direction_of_emission_top(X,Y,Z,precision,H);
+    Pi=determine_point_of_intersection(N,X,Y,Z,H,L,B);
+    if(Pi(4)==2)
+        	wallhits(g,1)=Pi(1);
+            wallhits(g,2)=Pi(2);
+            wallhits(g,3)=Pi(3);
+            g=g+1;
+    elseif(Pi(4)==3)
+        	sidehits(sg,1)=Pi(1);
+            sidehits(sg,2)=Pi(2);
+            sidehits(sg,3)=Pi(3);
+            sg=sg+1;
+    elseif(Pi(4)==1)
+    absrb=rand;
+    if(absrb<eps1)
+            bottomhits(bg,1)=Pi(1);
+            bottomhits(bg,2)=Pi(2);
+            bottomhits(bg,3)=Pi(3);
+            bg=bg+1;
+    else
+        Ns=determine_direction_of_emission(Pi(1),Pi(2),Pi(3),precision,H);
+        Pinew=determine_point_of_intersection(Ns,Pi(1),Pi(2),Pi(3),H,L,B);
+        while (1)
+        if (Pinew(4)==2)
+            wallhits(g,1)=Pinew(1);
+            wallhits(g,2)=Pinew(2);
+            wallhits(g,3)=Pinew(3);
+            g=g+1;
+            break;
+        elseif(Pinew(4)==3)
+        	sidehits(sg,1)=Pinew(1);
+            sidehits(sg,2)=Pinew(2);
+            sidehits(sg,3)=Pinew(3);
+            sg=sg+1;
+            break;
+        elseif(Pinew(4)==4)
+                absrb=rand;
+                if (absrb<(1-rho2))
+                    hits(g,1)=Pinew(1);
+                    hits(g,2)=Pinew(2);
+                    hits(g,3)=Pinew(3);
+                    g=g+1;
+                    break;
+                else
+                Ns=determine_specular_direction(nTP,Pinew,Pi(1),Pi(2),Pi(3));
+                Pinew=determine_point_of_intersection(Ns,Pinew(1),Pinew(2),Pinew(3),H,L,B);
+                end
+        elseif(Pinew(4)==1)
+                absrb=rand;
+                if (absrb<eps1)
+                    bottomhits(bg,1)=Pinew(1);
+                    bottomhits(bg,2)=Pinew(2);
+                    bottomhits(bg,3)=Pinew(3);
+                    bg=bg+1;
+                    break;
+                else
+                Ns=determine_direction_of_emission(Pinew(1),Pinew(2),Pinew(3),precision,H);
+                Pinew=determine_point_of_intersection(Ns,Pinew(1),Pinew(2),Pinew(3),H,L,B);
+                end
+        end
+        end
+    end
+  end
+end
+topplane=zeros();
+bottomplane=zeros();
+spherepoints=zeros();
+% scatter3(wallhits(:,1),wallhits(:,2),wallhits(:,3));
+scatter3(sidehits(:,1),sidehits(:,2),sidehits(:,3));
+hold on;
+% scatter3(hits(:,1),hits(:,2),hits(:,3));
+% hold on;
+% scatter3(incident(:,1),incident(:,2),incident(:,3),'r');
+% hold on;
+% scatter3(bottomhits(:,1),bottomhits(:,2),bottomhits(:,3),'g');
+% hold off;
+axis([-L L -B B -H H]);
+hold on;
+%
+n=51;
+%
+H=[bottomhits(:,1),bottomhits(:,2)];
+[N,C]=hist3(H,[n-1,n-1]);
+H=[sidehits(:,2),sidehits(:,3)];
+[N1,C]=hist3(H,[n-1,n-1]);
+e=sum(N,1)+sum(N1,1);
+e;
+e=e.*(1000*L*B/nrays);
+%%
+length=L;
+m=n-1;
+a=5.20833e-07;
+x=length/m;
+alpha=a*t;
+R=0.1;
+j=1;
+T=ones(n,2);
+T=250*T;
+T(1,1)=273;
+T(1,2)=273;
+T(n,1)=273;
+T(n,2)=273;
+while (R>0.00000001)
+    for i=2:1:n-1
+    T(i,2)=alpha*(((T(i+1,1)-(2*T(i,1))+T(i-1,1))/(x*x))+e(i)-(h*x*B*(T(i,1)-298)))+T(i,1);
+    res(i)=t*(T(i,2)-T(i,1));
+    end
+    R=max(res);
+    for i=1:1:n
+    T(i,1)=T(i,2);
+end
+j=j+1;
+end
+Tlength=T(:,2)-273
