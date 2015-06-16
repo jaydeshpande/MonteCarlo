@@ -1,0 +1,123 @@
+function [Pi]=determine_point_of_intersection(N,X,Y,Z,H,L,B)
+dist=zeros();
+st=zeros();
+precision=0.00001;
+k=1;
+%%
+% Bottom Plane
+t=(-H-Z)/N(3);
+Y1=Y+(N(2)*t);
+X1=X+(N(1)*t);
+Z1=-H;
+prod=(Z1-Z)*(-1);
+w=sqrt((X1-X)^2 + (Y1-Y)^2 + (Z1-Z)^2);
+if (w>=precision) && (prod>0)
+dist(k)=w;
+st(k,1)=X1;
+st(k,2)=Y1;
+st(k,3)=Z1;
+st(k,4)=1;
+k=k+1;
+end
+%%
+% Top Plane
+t=(H-Z)/N(3);
+Y2=Y+(N(2)*t);
+X2=X+(N(1)*t);
+Z2=H;
+prod=(Z2-Z);
+w=sqrt((X2-X)^2 + (Y2-Y)^2 + (Z2-Z)^2);
+if (w>=precision) && (prod>0)
+dist(k)=w;
+st(k,1)=X2;
+st(k,2)=Y2;
+st(k,3)=Z2;
+st(k,4)=4;
+k=k+1; 
+end
+%%
+% Side Plane
+t=(-L-X)/N(1);
+Y1=Y+(N(2)*t);
+X1=-L;
+Z1=Z+(N(3)*t);
+if (Z>(H-precision))
+    prod=(Z1-Z)*(-1);
+else
+    prod=(Z1-Z);
+end 
+w=sqrt((X1-X)^2 + (Y1-Y)^2 + (Z1-Z)^2);
+if (w>=precision) && (prod>0)
+dist(k)=w;
+st(k,1)=X1;
+st(k,2)=Y1;
+st(k,3)=Z1;
+st(k,4)=3;
+k=k+1;
+end
+%%
+% Side Plane 2
+t=(L-X)/N(1);
+Y1=Y+(N(2)*t);
+X1=L;
+Z1=Z+(N(3)*t);
+if (Z>(H-precision))
+    prod=(Z1-Z)*(-1);
+else
+    prod=(Z1-Z);
+end 
+w=sqrt((X1-X)^2 + (Y1-Y)^2 + (Z1-Z)^2);
+if (w>=precision) && (prod>0)
+dist(k)=w;
+st(k,1)=X1;
+st(k,2)=Y1;
+st(k,3)=Z1;
+st(k,4)=3;
+k=k+1;
+end
+%%
+%%
+% Side Plane 3
+t=(-B-Y)/N(2);
+Y1=-B;
+X1=X+(N(1)*t);
+Z1=Z+(N(3)*t);
+if (Z>(H-precision))
+    prod=(Z1-Z)*(-1);
+else
+    prod=(Z1-Z);
+end 
+w=sqrt((X1-X)^2 + (Y1-Y)^2 + (Z1-Z)^2);
+if (w>=precision) && (prod>0)
+dist(k)=w;
+st(k,1)=X1;
+st(k,2)=Y1;
+st(k,3)=Z1;
+st(k,4)=2;
+k=k+1;
+end
+%%
+%%
+% Side Plane 4
+t=(B-Y)/N(2);
+Y1=B;
+X1=X+(N(1)*t);
+Z1=Z+(N(3)*t);
+if (Z>(H-precision))
+    prod=(Z1-Z)*(-1);
+else
+    prod=(Z1-Z);
+end 
+w=sqrt((X1-X)^2 + (Y1-Y)^2 + (Z1-Z)^2);
+if (w>=precision) && (prod>0)
+dist(k)=w;
+st(k,1)=X1;
+st(k,2)=Y1;
+st(k,3)=Z1;
+st(k,4)=2;
+k=k+1;
+end
+%%
+[C,I]=min(dist);
+Pi=[st(I,1) st(I,2) st(I,3) st(I,4)];
+end
